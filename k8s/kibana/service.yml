@@ -10,4 +10,4 @@ spec:
   - port: 5601
     targetPort: 5601
     protocol: TCP
-  type: LoadBalancer
+  type: NodePort
