@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: elk
+data:
+  logstash.conf: |
+    input {
+      beats {
+        port => 5044
+      }
+    }
+    
+    filter {
+      json {
+        source => "message"
+        target => "parsed"
+        skip_on_invalid_json => true
+      }
+    
+      mutate {
+        add_field => {
+          "request_id" => "%{[parsed][request_id]}"
+          "status"     => "%{[parsed][status]}"
+          "code"       => "%{[parsed][code]}"
+          "log_service" => "%{[parsed][log_service]}"
+          "log_api"     => "%{[parsed][log_api]}"
+        }
+      }
+    
+      if ![log_service] or [log_service] == "" {
+        mutate { replace => { "log_service" => "unknown" } }
+      }
+    
+      if ![log_api] or [log_api] == "" {
+        mutate { replace => { "log_api" => "unknown" } }
+      }
+    
+      mutate {
+        lowercase => ["log_service", "log_api"]
+        gsub => [
+          "log_service", "[^a-z0-9]+", "-",
+          "log_api",     "[^a-z0-9]+", "-"
+        ]
+      }
+    
+      mutate {
+        add_field => { "[@metadata][dataset]" => "%{log_service}" }
+      }
+    }
+    
+    output {
+      elasticsearch {
+        hosts => ["http://elasticsearch:9200"]
+        user => "${ELASTIC_USERNAME}"
+        password => "${ELASTIC_PASSWORD}"
+        data_stream => true
+        data_stream_type => "logs"
+        data_stream_dataset => "%{[@metadata][dataset]}"
+        data_stream_namespace => "default"
+      }
+    }
