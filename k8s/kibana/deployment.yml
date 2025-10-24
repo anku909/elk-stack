@@ -16,19 +16,12 @@ spec:
       containers:
       - name: kibana
         image: docker.elastic.co/kibana/kibana:8.13.0
-        resources:
-          limits:
-            cpu: "1"
-            memory: "1Gi"
-          requests:
-            cpu: "0.5"
-            memory: "512Mi"
         ports:
         - containerPort: 5601
           name: http
         env:
         - name: ELASTICSEARCH_HOSTS
-          value: "http://elasticsearch:9200"
+          value: "http://elasticsearch.elk.svc.cluster.local:9200"
         - name: ELASTICSEARCH_USERNAME
           value: "kibana_system"
         - name: ELASTICSEARCH_PASSWORD
