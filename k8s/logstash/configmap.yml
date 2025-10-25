@@ -10,14 +10,18 @@ data:
         port => 5044
       }
     }
-    
+
     filter {
-      json {
-        source => "message"
-        target => "parsed"
-        skip_on_invalid_json => true
+      # Parse JSON log from Filebeat
+      if [message] {
+        json {
+          source => "message"
+          target => "parsed"
+          skip_on_invalid_json => true
+        }
       }
-    
+
+      # Add important fields
       mutate {
         add_field => {
           "request_id" => "%{[parsed][request_id]}"
@@ -27,15 +31,17 @@ data:
           "log_api"     => "%{[parsed][log_api]}"
         }
       }
-    
+
+      # Set defaults if missing
       if ![log_service] or [log_service] == "" {
         mutate { replace => { "log_service" => "unknown" } }
       }
-    
+
       if ![log_api] or [log_api] == "" {
         mutate { replace => { "log_api" => "unknown" } }
       }
-    
+
+      # Clean up field names
       mutate {
         lowercase => ["log_service", "log_api"]
         gsub => [
@@ -43,20 +49,33 @@ data:
           "log_api",     "[^a-z0-9]+", "-"
         ]
       }
-    
+
+      # Set dataset for dynamic data streams: combine service + API
       mutate {
-        add_field => { "[@metadata][dataset]" => "%{log_service}" }
+        add_field => { "[@metadata][dataset]" => "%{log_service}-%{log_api}" }
       }
     }
-    
+
     output {
+      # Debugging: optional
+      stdout { codec => rubydebug }
+
       elasticsearch {
         hosts => ["http://elasticsearch:9200"]
         user => "${ELASTIC_USERNAME}"
         password => "${ELASTIC_PASSWORD}"
+        ecs_compatibility => "v8"
+        ssl => false
         data_stream => true
         data_stream_type => "logs"
         data_stream_dataset => "%{[@metadata][dataset]}"
         data_stream_namespace => "default"
       }
     }
+
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    xpack.monitoring.enabled: true
+    xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+    xpack.monitoring.elasticsearch.username: "${ELASTIC_USERNAME}"
+    xpack.monitoring.elasticsearch.password: "${ELASTIC_PASSWORD}"

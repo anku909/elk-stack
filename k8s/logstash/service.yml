@@ -11,4 +11,4 @@ spec:
     targetPort: 5044
     protocol: TCP
     name: beats
-  type: ClusterIP
+  type: NodePort
