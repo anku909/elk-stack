@@ -28,4 +28,4 @@ done
       /iplookupapi
       /panverify
       /adharverify 
-         logs.log # inside api folder there are log files 
+         logs.log # inside api folder there are log files  

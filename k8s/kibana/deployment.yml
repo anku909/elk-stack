@@ -29,3 +29,13 @@ spec:
             secretKeyRef:
               name: elk-credentials
               key: kibana-password
+
+        # 👇 Add this environment variable for persistent encryption
+        - name: XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY
+          value: "d5d2dd3f604f1c5b7136f8163538617ad49dd9777ebbb82a4614829e280b4d08"
+
+        # Optional but good practice
+        - name: SERVER_HOST
+          value: "0.0.0.0"
+        - name: XPACK_SECURITY_ENABLED
+          value: "true"
